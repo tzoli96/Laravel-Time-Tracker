@@ -1,27 +1,28 @@
 x-variables: &defaults
   BACKEND_CONTAINER_NAME: ${BACKEND_CONTAINER_NAME:-laravel-backend}
+  WEBSERVER_CONTAINER_NAME: ${WEBSERVER_CONTAINER_NAME:-laravel-webserver}
   FRONTEND_CONTAINER_NAME: ${FRONTEND_CONTAINER_NAME:-vue-frontend}
   DB_CONTAINER_NAME: ${DB_CONTAINER_NAME:-postgres-db}
   ADMINER_CONTAINER_NAME: ${ADMINER_CONTAINER_NAME:-adminer}
 
 services:
-  # Laravel backend
   backend:
     build:
       context: .
       dockerfile: .docker/backend/Dockerfile
-    container_name: ${BACKEND_CONTAINER_NAME:-laravel-backend}
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: ${BACKEND_CONTAINER_NAME}
     working_dir: /var/www/html
     volumes:
-      - ./backend:/var/www/html
-    ports:
-      - "${BACKEND_PORT:-8000}:80"
+      - ./backend:/var/www/html:delegated
     environment:
       APP_ENV: ${APP_ENV:-local}
       APP_DEBUG: ${APP_DEBUG:-true}
       APP_KEY: ${APP_KEY:-base64:random-key-placeholder}
       DB_CONNECTION: ${DB_CONNECTION:-pgsql}
-      DB_HOST: ${DB_HOST:-db}
+      DB_HOST: db
       DB_PORT: ${DB_PORT:-5432}
       DB_DATABASE: ${DB_DATABASE:-laravel}
       DB_USERNAME: ${DB_USERNAME:-laravel}
@@ -30,30 +31,74 @@ services:
       - db
     networks:
       - app-network
+  composer:
+    build:
+      context: .
+      dockerfile: .docker/backend/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - backend
+    entrypoint: ['composer', 'install', '--ignore-platform-reqs']
+    networks:
+      - app-network
+  artisan:
+    build:
+      context: .
+      dockerfile: .docker/backend/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      composer:
+        condition: service_started
+      backend:
+        condition: service_started
+    entrypoint: ['sh', '/usr/local/bin/docker-entrypoint.sh']
+    networks:
+      - app-network
+  webserver:
+    build:
+      context: .
+      dockerfile: .docker/webserver/Dockerfile
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    container_name: ${WEBSERVER_CONTAINER_NAME}
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8000}:80"
+    volumes:
+      - .:/var/www:cached
+      - ./.docker/webserver/nginx:/etc/nginx/conf.d:ro
+    networks:
+      - app-network
 
-  # Vue frontend
   frontend:
     build:
       context: .
       dockerfile: .docker/frontend/Dockerfile
-    container_name: ${FRONTEND_CONTAINER_NAME:-vue-frontend}
+    container_name: ${FRONTEND_CONTAINER_NAME}
     working_dir: /app
     volumes:
-      - ./frontend:/app
+      - ./frontend:/app:cached
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
-    command: >
+    command: |
       sh -c "
       yarn install &&
       yarn dev --host
       "
     networks:
       - app-network
-
-  # PostgreSQL Database
   db:
     image: postgres:latest
-    container_name: ${DB_CONTAINER_NAME:-postgres-db}
+    container_name: ${DB_CONTAINER_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -65,10 +110,9 @@ services:
     networks:
       - app-network
 
-  # Adminer for database management
   adminer:
     image: adminer:latest
-    container_name: ${ADMINER_CONTAINER_NAME:-adminer}
+    container_name: ${ADMINER_CONTAINER_NAME}
     ports:
       - "${ADMINER_PORT:-8080}:8080"
     depends_on:
