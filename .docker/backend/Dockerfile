@@ -16,11 +16,13 @@ RUN apk --no-cache add \
         zip \
         libzip-dev \
         gd \
+        postgresql-dev \
+        postgresql-client \
     && docker-php-ext-configure gd \
         --with-freetype=/usr/include/ \
         --with-jpeg=/usr/include/ \
         --with-webp=/usr/include/ \
-    && docker-php-ext-install -j$(nproc) gd zip pdo pdo_mysql
+    && docker-php-ext-install -j$(nproc) gd zip pdo pdo_pgsql pdo_mysql
 
 # Create laravel user with appropriate UID and GID
 RUN addgroup -g ${GID} --system laravel \
@@ -55,4 +57,5 @@ RUN chown -R laravel:laravel /var/www/html \
 # Switch to laravel user
 USER laravel
 
-CMD ["php-fpm", "-y", "/usr/local/etc/php-fpm.conf", "-R"]
+# Use a custom entrypoint to wait for PostgreSQL
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

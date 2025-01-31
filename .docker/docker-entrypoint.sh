@@ -1,18 +1,56 @@
 #!/bin/sh
+set -e
 
-# Navigate to the working directory
-cd /var/www/html
+# Logging function
+log() {
+  local message="$1"
+  local timestamp
+  timestamp=$(date +'%Y-%m-%d %H:%M:%S')
+  echo "${timestamp} [ENTRYPOINT] ${message}"
+}
 
-# Rename .env.example to .env if .env does not already exist
+# Function to check PostgreSQL availability
+wait_for_postgres() {
+  log "Waiting for PostgreSQL service at ${DB_HOST}:${DB_PORT}..."
+  until pg_isready -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USERNAME}"; do
+    log "PostgreSQL is not available yet. Retrying in 2 seconds..."
+    sleep 2
+  done
+  log "PostgreSQL is available!"
+}
+
+# Set working directory
+WORKDIR="/var/www/html"
+if [ -d "${WORKDIR}" ]; then
+  cd "${WORKDIR}"
+else
+  log "Error: Working directory ${WORKDIR} does not exist."
+  exit 1
+fi
+
+# Wait for PostgreSQL service
+wait_for_postgres
+
+# Check if .env file exists and set APP_KEY if not present
 if [ ! -f .env ]; then
+  log ".env file not found. Copying from .env.example..."
   cp .env.example .env
 fi
 
-# Run the artisan migrate command
+if ! grep -q "^APP_KEY=" .env; then
+  log "APP_KEY not set. Generating new application key..."
+  php artisan key:generate --force
+fi
+
+# Install PHP dependencies
+log "Installing PHP dependencies with Composer..."
+composer install --no-interaction --prefer-dist --optimize-autoloader
+log "Composer install completed."
+
+# Run Laravel migrations
+log "Running Artisan migrations..."
 php artisan migrate --force
 
-# Run the artisan test command to test the application.
-php artisan test
-
-# Call the default command
-exec "$@"
+# Start PHP-FPM
+log "Starting PHP-FPM..."
+exec php-fpm -y /usr/local/etc/php-fpm.conf -R
