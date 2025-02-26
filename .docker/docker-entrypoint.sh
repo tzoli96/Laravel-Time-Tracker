@@ -35,6 +35,7 @@ wait_for_postgres
 if [ ! -f .env ]; then
   log ".env file not found. Copying from .env.example..."
   cp .env.example .env
+  cp .env.example .env.testing
 fi
 
 if ! grep -q "^APP_KEY=" .env; then
@@ -50,6 +51,16 @@ log "Composer install completed."
 # Run Laravel migrations
 log "Running Artisan migrations..."
 php artisan migrate --force
+
+# Run Laravel seeders
+log "Running database seeders..."
+php artisan db:seed --force
+log "Seeding completed."
+
+# Running tests
+log "Running tests..."
+# php ./vendor/bin/pest
+log "Tests completed."
 
 # Start PHP-FPM
 log "Starting PHP-FPM..."

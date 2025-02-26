@@ -3,11 +3,15 @@ FROM php:8.3-fpm-alpine
 ARG UID=1000
 ARG GID=1000
 
-ENV UID=${UID}
-ENV GID=${GID}
+ENV UID=${UID} \
+    GID=${GID} \
+    PHP_OPCACHE_VALIDATE_TIMESTAMPS=0 \
+    PHP_OPCACHE_MAX_ACCELERATED_FILES=20000 \
+    PHP_OPCACHE_MEMORY_CONSUMPTION=256 \
+    PHP_OPCACHE_INTERNED_STRINGS_BUFFER=16 \
+    PHP_OPCACHE_PRELOAD=/var/www/html/preload.php
 
-# Install dependencies
-RUN apk --no-cache add \
+RUN apk add --no-cache \
         freetype-dev \
         libjpeg-turbo-dev \
         libpng-dev \
@@ -15,47 +19,65 @@ RUN apk --no-cache add \
         libxpm-dev \
         zip \
         libzip-dev \
-        gd \
         postgresql-dev \
         postgresql-client \
+        bash \
+        shadow \
+        su-exec \
+        tzdata \
+        git \
+        vim \
+        curl \
+        unzip \
+        supervisor \
+        openssh-client \
+        autoconf \
+        build-base \
+        linux-headers \
     && docker-php-ext-configure gd \
         --with-freetype=/usr/include/ \
         --with-jpeg=/usr/include/ \
         --with-webp=/usr/include/ \
-    && docker-php-ext-install -j$(nproc) gd zip pdo pdo_pgsql pdo_mysql
+    && docker-php-ext-install -j$(nproc) \
+        gd \
+        zip \
+        pdo \
+        pdo_pgsql \
+        pdo_mysql \
+        opcache
 
-# Create laravel user with appropriate UID and GID
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug \
+    &&  echo "xdebug.mode=debug" > /usr/local/etc/php/conf.d/00-xdebug.ini \
+    && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/00-xdebug.ini \
+    && echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/00-xdebug.ini \
+    && echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/00-xdebug.ini \
+    && echo "xdebug.log_level=0" >> /usr/local/etc/php/conf.d/00-xdebug.ini
+
+RUN apk del --no-cache autoconf build-base linux-headers
+
 RUN addgroup -g ${GID} --system laravel \
     && adduser -u ${UID} -G laravel --system -D -s /bin/sh laravel
 
-# Set working directory
 WORKDIR /var/www/html
 
-# Copy Composer binary from composer image
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-# Adjust permissions for storage and logs directories
 RUN mkdir -p storage/framework/views storage/logs bootstrap/cache \
-    && chown -R laravel:laravel storage bootstrap/cache
+    && chown -R laravel:laravel storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
-# Adjust PHP-FPM configuration
 RUN sed -i "s/user = www-data/user = laravel/g" /usr/local/etc/php-fpm.d/www.conf \
     && sed -i "s/group = www-data/group = laravel/g" /usr/local/etc/php-fpm.d/www.conf \
-    && echo "php_admin_flag[log_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf
+    && echo "php_admin_flag[log_errors] = on" >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo "php_admin_value[error_log] = /var/log/php_errors.log" >> /usr/local/etc/php-fpm.d/www.conf
 
-# Copy entrypoint script from dockerfiles directory
 COPY ./.docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-
-# Ensure the entrypoint script is executable
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Change ownership and permissions
-RUN chown -R laravel:laravel /var/www/html \
-    && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
+RUN touch /var/www/html/preload.php \
+    && chown laravel:laravel /var/www/html/preload.php
 
-# Switch to laravel user
 USER laravel
 
-# Use a custom entrypoint to wait for PostgreSQL
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
