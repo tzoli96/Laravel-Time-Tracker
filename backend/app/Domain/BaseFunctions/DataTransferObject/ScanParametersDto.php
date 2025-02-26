@@ -5,7 +5,7 @@ class ScanParametersDto
 {
     public function __construct(
         public array $foldersToScan,
-        public string $basePath = 'src/Domains',
+        public string $basePath = 'app/Domain',
         public string $extension = 'php'
     ) {}
 }

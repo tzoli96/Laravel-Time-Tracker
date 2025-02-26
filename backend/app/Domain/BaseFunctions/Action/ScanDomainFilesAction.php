@@ -6,10 +6,14 @@ use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
 use App\Domain\BaseFunctions\DataTransferObject\ScanParametersDto;
 use App\Domain\BaseFunctions\DataTransferObject\ScanDirectoryParametersDto;
-use App\Domain\BaseFunctions\Action\ScanDirectorAction;
+use App\Domain\BaseFunctions\DataTransferObject\ScanResultDto;
+use Throwable;
 
 class ScanDomainFilesAction extends AbstractAction
 {
+    /**
+     * @throws Throwable
+     */
     public function __invoke(ScanParametersDto $scanParams): ScanResultDto
     {
         return $this->executeWithLogging(function () use ($scanParams) {
@@ -25,7 +29,9 @@ class ScanDomainFilesAction extends AbstractAction
                 $scanParams->extension
             );
 
-            return ScanResultDto::fromFiles($scanDirectorDto);
+            $files = app(ScanDirectorAction::class)($scanDirectorDto);
+
+            return ScanResultDto::fromFiles($files);
         }, 'ScanDomainFilesAction');
     }
 }
