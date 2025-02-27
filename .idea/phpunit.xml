@@ -4,7 +4,7 @@
     <option name="directories">
       <list>
         <option value="$PROJECT_DIR$/backend/tests/Unit" />
-        <option value="$PROJECT_DIR$/backend/tests/Feature" />
+        <option value="$PROJECT_DIR$/backend/app/Domain" />
       </list>
     </option>
   </component>

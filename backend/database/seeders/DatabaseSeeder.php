@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Domain\BaseFunctions\Action\ScanDomainFilesAction;
+use App\Domain\BaseFunctions\DataTransferObject\ScanParametersDto;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,11 +13,17 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $dto = new ScanParametersDto(['Seeders']);
+        $result = app(ScanDomainFilesAction::class)($dto);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        foreach ($result->files as $seederPath) {
+            $relativePath = str_replace(base_path() . '/', '', $seederPath);
+            $seederClass = str_replace('.php', '', $relativePath);
+
+            if (class_exists($seederClass)) {
+                $this->call($seederClass);
+            }
+        }
+
     }
 }

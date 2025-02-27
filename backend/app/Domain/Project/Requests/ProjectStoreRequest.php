@@ -20,6 +20,6 @@ class ProjectStoreRequest extends FormRequest
 
     public function toDto(): ProjectStoreRequestDto
     {
-        return ProjectStoreRequestDto::fromRequest($this->validated());
+        return ProjectStoreRequestDto::fromRequest($this->validated('project_name'));
     }
 }
