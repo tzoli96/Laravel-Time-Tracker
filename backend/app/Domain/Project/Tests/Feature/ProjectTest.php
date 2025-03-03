@@ -1,8 +1,9 @@
 <?php
 
+use App\Domain\Memo\Models\TimeTrack;
 use App\Domain\Project\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use function Pest\Laravel\postJson;
+use function Pest\Laravel\{postJson,getJson};
 use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
@@ -39,4 +40,45 @@ it('fails if project_name already exists', function () {
 
     $response->assertUnprocessable()
         ->assertJsonValidationErrors(['project_name']);
+});
+
+it('returns a list of all projects', function () {
+    Project::factory()->count(3)->create();
+    $response = $this->getJson(route('projects.index'));
+    $response->assertStatus(200)
+        ->assertJsonStructure([
+            'message',
+            'data' => [
+                '*' => [
+                    'id',
+                    'project_name',
+                    'created_at',
+                    'updated_at'
+                ]
+            ]
+        ]);
+});
+
+it('returns an empty array when no projects exist', function () {
+    $response = $this->getJson(route('projects.index'));
+
+    $response->assertStatus(200)
+        ->assertJson([
+            'message' => 'Projects retrieved successfully',
+            'data' => []
+        ]);
+});
+
+it('retrieves a specific project successfully with time tracks', function () {
+    $project = Project::factory()->create([
+        'project_name' => 'Test Project'
+    ]);
+
+    TimeTrack::factory()->count(3)->create([
+        'project_id' => $project->id,
+    ]);
+
+    $response = getJson(route('project.get', ['project_id' => $project->id]));
+
+    $response->assertStatus(201);
 });

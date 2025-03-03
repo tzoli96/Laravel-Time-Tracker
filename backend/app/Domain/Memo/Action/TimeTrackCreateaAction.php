@@ -1,16 +1,18 @@
 <?php
 namespace App\Domain\Memo\Action;
 
+use App\Domain\Memo\Models\TimeTrack;
+use App\Domain\Memo\DataTransferObjects\Action\TimeTrackCreateDto;
+
 class TimeTrackCreateaAction
 {
-
-    public function __invoke()
+    public function __invoke(TimeTrackCreateDto $dto)
     {
-        TimeTrack::create([
-            'project_id' => $project_id,
-            'start' => $request->start,
-            'finish' => $request->finish,
-            'memo' => $request->memo,
+        return TimeTrack::create([
+            'project_id' => $dto->project_id,
+            'start' => $dto->start,
+            'finish' => $dto->finish,
+            'memo' => $dto->memo,
         ]);
     }
 }

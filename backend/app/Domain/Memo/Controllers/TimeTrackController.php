@@ -9,7 +9,7 @@ class TimeTrackController extends Controller
 {
     public function __construct(private readonly TimeTrackService $service) {}
 
-    public function store(TimeTrackStoreRequest $request, $project_id)
+    public function store(TimeTrackStoreRequest $request)
     {
         $timeTrack = $this->service->create($request->toDto());
 

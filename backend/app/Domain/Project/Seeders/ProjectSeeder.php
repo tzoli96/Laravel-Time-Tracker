@@ -4,13 +4,13 @@ namespace App\Domain\Project\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Domain\Project\Models\Project;
-use App\Domain\Project\Factories\ProjectFactory;
+use App\Domain\Project\Factories\TimeTrackFactory;
 
 class ProjectSeeder extends Seeder
 {
     public function run(): void
     {
         Project::query()->delete();
-        ProjectFactory::factory()->count(10)->create();
+        TimeTrackFactory::factory()->count(10)->create();
     }
 }

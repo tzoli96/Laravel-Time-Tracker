@@ -4,7 +4,6 @@ namespace App\Domain\Project\Action;
 
 use App\Domain\Project\Models\Project;
 use App\Domain\Project\DataTransferObjects\Action\CreateProjectActionDto;
-use App\Domain\Memo\Models\TimeTrack;
 
 class CreateAProjectAction
 {
