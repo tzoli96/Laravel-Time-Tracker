@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Domain\Memo\Enums\TimeTrackStatus;
 
 return new class extends Migration
 {
@@ -15,6 +16,9 @@ return new class extends Migration
             $table->timestamp('finish')->nullable();
             $table->integer('duration')->nullable();
             $table->text('memo')->nullable();
+            $table->enum('status', [TimeTrackStatus::DRAFT->value, TimeTrackStatus::FINAL->value])
+                ->default(TimeTrackStatus::DRAFT->value)
+                ->after('memo');
             $table->timestamps();
         });
     }

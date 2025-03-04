@@ -7,6 +7,7 @@ use App\Domain\Memo\Factories\TimeTrackFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Domain\Project\Models\Project;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Domain\Memo\Enums\TimeTrackStatus;
 
 class TimeTrack extends AbstractModel
 {
@@ -17,13 +18,14 @@ class TimeTrack extends AbstractModel
     protected $casts = [
         'start' => 'datetime',
         'finish' => 'datetime',
+        'status' => TimeTrackStatus::class
     ];
 
     /**
      * Set default attributes.
      */
     protected $attributes = [
-        'status' => 'draft',
+        'status' => TimeTrackStatus::DRAFT->value,
     ];
 
     public static function boot()
@@ -44,16 +46,6 @@ class TimeTrack extends AbstractModel
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
-    }
-
-    public function scopeFinalized($query)
-    {
-        return $query->where('status', 'final');
-    }
-
-    public function scopeDrafts($query)
-    {
-        return $query->where('status', 'draft');
     }
 
     protected static function newFactory(): TimeTrackFactory

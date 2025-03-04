@@ -13,6 +13,7 @@ class TimeTrackCreateaAction
             'start' => $dto->start,
             'finish' => $dto->finish,
             'memo' => $dto->memo,
+            'status' => $dto->memo,
         ]);
     }
 }

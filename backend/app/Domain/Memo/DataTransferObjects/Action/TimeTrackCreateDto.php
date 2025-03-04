@@ -10,7 +10,8 @@ class TimeTrackCreateDto
         public int $project_id,
         public string $start,
         public ?string $finish,
-        public ?string $memo
+        public ?string $memo,
+        public ?string $status
     ) {}
 
     public static function fromData(TimeTrackStoreRequestDto $requestDto): self
@@ -19,7 +20,8 @@ class TimeTrackCreateDto
             $requestDto->project_id,
             $requestDto->start,
             $requestDto->finish ?? null,
-            $requestDto->memo ?? null
+            $requestDto->memo ?? null,
+            $requestDto
         );
     }
 }

@@ -7,3 +7,4 @@ Route::post('/projects', [ProjectController::class, 'store'])->name('projects.st
 Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
 Route::post('/projects/{project_id}/time-tracks', [TimeTrackController::class, 'store'])->name('timetrack.store');
 Route::get('/projects/{project_id}', [ProjectController::class, 'get'])->name('project.get');
+Route::post('/memos/autosave', [TimeTrackController::class, 'autosave'])->name('timetrack.autosave');

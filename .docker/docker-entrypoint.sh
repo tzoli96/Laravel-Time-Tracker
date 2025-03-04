@@ -51,6 +51,7 @@ log "Composer install completed."
 # Run Laravel migrations
 log "Running Artisan migrations..."
 php artisan migrate --force
+php artisan migrate --env=testing --force
 
 # Run Laravel seeders
 log "Running database seeders..."
